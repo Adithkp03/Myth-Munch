@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 AI Misinformation Detection Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+               background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        
+        .main-card { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .input-section { margin-bottom: 30px; }
+        .input-section h3 { color: #333; margin-bottom: 15px; font-size: 1.3em; }
+        .claim-input { width: 100%; padding: 15px; border: 2px solid #e1e5e9; border-radius: 10px; 
+                       font-size: 1.1em; min-height: 100px; resize: vertical; }
+        .claim-input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        
+        .button-group { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; 
+               font-size: 1em; font-weight: 600; transition: all 0.3s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a6fd8; transform: translateY(-2px); }
+        .btn-secondary { background: #48bb78; color: white; }
+        .btn-secondary:hover { background: #38a169; transform: translateY(-2px); }
+        
+        .loading { display: none; text-align: center; color: #667eea; font-size: 1.1em; margin: 20px 0; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3;
+                   border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .results { margin-top: 30px; }
+        .verdict-card { padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .verdict-false { background: #fed7d7; border-left: 5px solid #e53e3e; }
+        .verdict-true { background: #c6f6d5; border-left: 5px solid #38a169; }
+        .verdict-mixed { background: #feebc8; border-left: 5px solid #dd6b20; }
+        
+        .verdict-header { font-size: 1.4em; font-weight: bold; margin-bottom: 10px; }
+        .fact-checked-false { color: #e53e3e; }
+        .fact-checked-true { color: #38a169; }
+        .mixed-evidence { color: #dd6b20; }
+        
+        .section { background: #f7fafc; padding: 20px; border-radius: 10px; margin: 15px 0; }
+        .section h4 { color: #2d3748; margin-bottom: 10px; }
+        .evidence-list, .rec-list { margin: 10px 0; }
+        .evidence-list li, .rec-list li { margin: 5px 0; padding: 8px 0; }
+        
+        .citations { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 15px 0; }
+        .citation { border-bottom: 1px solid #e2e8f0; padding: 10px 0; }
+        .citation:last-child { border-bottom: none; }
+        .citation-title { font-weight: 600; color: #2d3748; }
+        .citation-meta { font-size: 0.9em; color: #718096; margin-top: 5px; }
+        .citation-rating { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .rating-false { background: #fed7d7; color: #c53030; }
+        .rating-true { background: #c6f6d5; color: #276749; }
+        .rating-mixed { background: #feebc8; color: #c05621; }
+        
+        .tabs { display: flex; border-bottom: 2px solid #e2e8f0; margin: 20px 0 0 0; }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .tab.active { border-bottom-color: #667eea; color: #667eea; font-weight: 600; }
+        .tab-content { padding: 20px 0; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        
+        .trending-topic { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .topic-keywords { color: #667eea; font-weight: 600; }
+        .topic-sample { font-style: italic; color: #718096; margin-top: 8px; }
+        
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .header h1 { font-size: 2em; }
+            .button-group { flex-direction: column; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 AI Misinformation Detection Agent</h1>
+            <p>Real-time fact-checking powered by professional sources & AI analysis</p>
+        </div>
+        
+        <div class="main-card">
+            <div class="input-section">
+                <h3>🎯 Enter a claim to fact-check:</h3>
+                <textarea id="claimInput" class="claim-input" 
+                          placeholder="Enter any claim you want to verify (e.g., 'COVID-19 vaccines cause autism', 'Climate change is a hoax', etc.)"></textarea>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="analyzeClaimFull()">
+                        🔬 Analyze Claim
+                    </button>
+                    <button class="btn btn-secondary" onclick="detectTrends()">
+                        📈 View Trending Topics
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div> Analyzing with real fact-checkers...
+                </div>
+            </div>
+
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeClaimFull() {
+            const claim = document.getElementById('claimInput').value.trim();
+            if (!claim) {
+                alert('Please enter a claim to analyze');
+                return;
+            }
+
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/full-analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ claim: claim })
+                });
+
+                const result = await response.json();
+                displayFullResults(result);
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayFullResults(result) {
+            const verdict = result.fact_check_verification.overall_verdict.verdict;
+            const confidence = Math.round(result.fact_check_verification.overall_verdict.confidence * 100);
+            const explanation = result.human_explanation;
+            
+            const verdictClasses = {
+                'fact_checked_false': 'verdict-false',
+                'likely_false': 'verdict-false', 
+                'fact_checked_true': 'verdict-true',
+                'mixed_evidence': 'verdict-mixed',
+                'disputed': 'verdict-mixed'
+            };
+            
+            const verdictColors = {
+                'fact_checked_false': 'fact-checked-false',
+                'likely_false': 'fact-checked-false',
+                'fact_checked_true': 'fact-checked-true', 
+                'mixed_evidence': 'mixed-evidence',
+                'disputed': 'mixed-evidence'
+            };
+
+            let html = `
+                <div class="results">
+                    <div class="verdict-card ${verdictClasses[verdict] || 'verdict-mixed'}">
+                        <div class="verdict-header ${verdictColors[verdict]}">
+                            ${getVerdictEmoji(verdict)} ${formatVerdict(verdict)} (${confidence}% confidence)
+                        </div>
+                        <p>${explanation.explanation}</p>
+                    </div>
+
+                    <div class="tabs">
+                        <div class="tab active" onclick="showTab('evidence')">📄 Evidence</div>
+                        <div class="tab" onclick="showTab('recommendations')">💡 Recommendations</div>
+                        <div class="tab" onclick="showTab('citations')">📚 Sources</div>
+                        <div class="tab" onclick="showTab('audiences')">👥 Different Audiences</div>
+                    </div>
+
+                    <div class="tab-content">
+                        <div id="evidence" class="tab-pane active">
+                            <div class="section">
+                                <h4>🔍 Evidence Summary:</h4>
+                                <ul class="evidence-list">
+                                    ${explanation.evidence_summary.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="recommendations" class="tab-pane">
+                            <div class="section">
+                                <h4>💭 Recommendations:</h4>
+                                <ul class="rec-list">
+                                    ${explanation.recommendations.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="citations" class="tab-pane">
+                            <div class="citations">
+                                <h4>📚 Professional Fact-Check Sources:</h4>
+                                ${explanation.fact_check_citations.map(citation => `
+                                    <div class="citation">
+                                        <div class="citation-title">${citation.title}</div>
+                                        <div class="citation-meta">
+                                            <strong>${citation.publisher}</strong> • 
+                                            <span class="citation-rating rating-${citation.rating.toLowerCase().includes('false') ? 'false' : citation.rating.toLowerCase().includes('true') ? 'true' : 'mixed'}">
+                                                ${citation.rating}
+                                            </span>
+                                            ${citation.date ? ` • ${citation.date}` : ''}
+                                            ${citation.url ? ` • <a href="${citation.url}" target="_blank">View Source</a>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div id="audiences" class="tab-pane">
+                            <div class="section">
+                                <h4>👥 General Public:</h4>
+                                <p>${explanation.audience_versions.general_public}</p>
+                            </div>
+                            <div class="section">
+                                <h4>📱 Social Media Ready:</h4>
+                                <pre style="background: #f1f5f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${explanation.audience_versions.social_media}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('results').innerHTML = html;
+        }
+
+        async function detectTrends() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/detect-trends', { method: 'POST' });
+                const result = await response.json();
+                
+                let html = `
+                    <div class="results">
+                        <h3>📈 Trending Misinformation Topics</h3>
+                        <p>Found ${result.total_topics} trending topics from ${result.total_documents} documents</p>
+                `;
+                
+                result.trending_topics.forEach((topic, index) => {
+                    html += `
+                        <div class="trending-topic">
+                            <h4>🎯 Topic ${topic.topic_id} (${topic.count} documents)</h4>
+                            <div class="topic-keywords">Keywords: ${topic.keywords.join(', ')}</div>
+                            <div class="topic-sample">"${topic.sample_docs[0]}"</div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                document.getElementById('results').innerHTML = html;
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('results').innerHTML = `
+                <div class="results">
+                    <div class="verdict-card verdict-false">
+                        <div class="verdict-header fact-checked-false">❌ Error</div>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getVerdictEmoji(verdict) {
+            const emojis = {
+                'fact_checked_false': '❌',
+                'fact_checked_true': '✅',
+                'likely_false': '🚩',
+                'mixed_evidence': '⚠️',
+                'disputed': '❓'
+            };
+            return emojis[verdict] || '🔍';
+        }
+
+        function formatVerdict(verdict) {
+            return verdict.replace(/_/g, ' ').toUpperCase();
+        }
+
+        // Add some sample claims for easy testing
+        window.onload = function() {
+            const samples = [
+                "COVID-19 vaccines cause autism",
+                "Climate change is a hoax", 
+                "5G towers spread coronavirus",
+                "The 2020 US election was rigged"
+            ];
+            
+            const randomSample = samples[Math.floor(Math.random() * samples.length)];
+            document.getElementById('claimInput').placeholder += `\n\nTry: "${randomSample}"`;
+        };
+    </script>
+</body>
+</html>

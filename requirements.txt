@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+requests
+transformers
+sentence-transformers
+bertopic
+hdbscan
+umap-learn
+scikit-learn
+duckduckgo-search
+pandas
+textblob
