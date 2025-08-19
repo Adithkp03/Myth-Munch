@@ -10,3 +10,8 @@ scikit-learn
 duckduckgo-search
 pandas
 textblob
+torch
+numpy
+regex
+python-dateutil
+typing-extensions
