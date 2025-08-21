@@ -27,17 +27,7 @@ logger = logging.getLogger("fact_checker")
 
 
 async def gemini_fact_check(claim: str) -> Dict:
-    prompt = f"""You are an expert fact-checker analyzing CURRENT NEWS (August 2025). Analyze the claim carefully:
-
-CLAIM: "{claim}"
-
-Provide your answer exactly as follows:
-
-VERDICT: [TRUE/FALSE/PARTIALLY_TRUE/INSUFFICIENT_INFO]
-CONFIDENCE: [0.0-1.0]
-EXPLANATION: [Brief explanation]
-
-Claim: {claim}"""
+    prompt = f
 
     def _run():
         try:
